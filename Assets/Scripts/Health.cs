@@ -3,35 +3,36 @@ using UnityEngine;
 
 public class Health : MonoBehaviour
 {
-    public event Action CharacterDied;
+    public event Action Died;
     public event Action<float> ValueUpdated;
     public event Action Hitted;
 
     [field: SerializeField] public float MaxValue { get; private set; } = 100;
     [field: SerializeField] public float Value { get; private set; } = 50;
-    [field: SerializeField] public float LethalValue { get; private set; } = 0;
+    [field: SerializeField] public float MinValue { get; private set; } = 0;
 
     public void TakeDamage(float damage)
     {
-        Value -= Mathf.Clamp(damage, LethalValue, float.MaxValue);
+        Value -= CheckNegativeValue(damage);
+        Value = LimitValue(Value);
         Hitted?.Invoke();
         ValueUpdated?.Invoke(Value);
 
-        if (Value <= LethalValue)
+        if (Value == MinValue)
         {
-            Value = LethalValue;
-            CharacterDied?.Invoke();
             ValueUpdated?.Invoke(Value);
+            Died?.Invoke();
         }
     }
 
     public void Healing(float healingAmount)
     {
-        Value += Mathf.Clamp(healingAmount, LethalValue, MaxValue - Value);
+        Value += CheckNegativeValue(healingAmount);
+        Value = LimitValue(Value);
         ValueUpdated?.Invoke(Value);
     }
 
-    public void TakeLethalDamage()
+    public void Kill()
     {
         TakeDamage(Value);
     }
@@ -39,5 +40,32 @@ public class Health : MonoBehaviour
     public void Ressurect()
     {
         Value = MaxValue;
+    }
+
+    private float CheckNegativeValue(float value)
+    {
+        if (value < 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    private float LimitValue(float value)
+    {
+        if (value < MinValue)
+        {
+            return MinValue;
+        }
+
+        if (value > MaxValue) 
+        { 
+            return MaxValue;
+        }
+
+        return value;
     }
 }
